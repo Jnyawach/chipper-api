@@ -12,6 +12,35 @@ class FavoriteTest extends TestCase
 {
     use DatabaseMigrations;
 
+    public function test_a_user_can_get_their_favorites()
+    {
+        $user = User::factory()->create();
+        $anotherUser = User::factory()->create();
+        $post = Post::factory()->create();
+
+        $this->actingAs($user)
+            ->postJson(route('favorites.store', ['post' => $post]))
+            ->assertCreated();
+        $this->actingAs($user)
+            ->postJson(route('favorites.user.store', ['user' => $anotherUser->id]));
+
+        $this->actingAs($user)
+            ->getJson(route('favorites.index'))
+            ->assertOk()
+            ->assertJsonFragment([
+                'id' => $post->id,
+                'title' => $post->title,
+                'body' => $post->body,
+            ])
+            ->assertJsonFragment([
+                'id' => $anotherUser->id,
+                'name' => $anotherUser->name,
+                'email' => $anotherUser->email,
+            ]);
+
+
+    }
+
     public function test_a_guest_can_not_favorite_a_post()
     {
         $post = Post::factory()->create();
@@ -19,6 +48,7 @@ class FavoriteTest extends TestCase
         $this->postJson(route('favorites.store', ['post' => $post]))
             ->assertStatus(401);
     }
+
 
     public function test_a_user_can_favorite_a_post()
     {

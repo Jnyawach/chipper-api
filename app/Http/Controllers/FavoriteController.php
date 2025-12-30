@@ -2,11 +2,12 @@
 
 namespace App\Http\Controllers;
 
-use App\Http\Resources\FavoriteResource;
+use App\Http\Requests\CreateFavoriteRequest;
+use App\Http\Resources\PostResource;
+use App\Http\Resources\UserResource;
 use App\Models\Post;
 use App\Models\User;
 use Illuminate\Http\Request;
-use App\Http\Requests\CreateFavoriteRequest;
 use Illuminate\Http\Response;
 use Illuminate\Support\Facades\Auth;
 
@@ -19,8 +20,19 @@ class FavoriteController extends Controller
 {
     public function index(Request $request)
     {
-        $favorites = $request->user()->favorites;
-        return FavoriteResource::collection($favorites);
+        $posts = Post::whereHas('favoritables', function ($query) use ($request) {
+            $query->where('user_id', $request->user()->id);
+        })->get();
+        $users = User::whereHas('favoritables', function ($query) use ($request) {
+            $query->where('user_id', $request->user()->id);
+        })->get();
+
+        return response()->json([
+            'data' => [
+                'posts' => PostResource::collection($posts),
+                'users' => UserResource::collection($users),
+            ],
+        ]);
     }
 
     public function store(CreateFavoriteRequest $request, Post $post)
@@ -47,10 +59,10 @@ class FavoriteController extends Controller
         return response()->noContent();
     }
 
-    public function favoriteUser(CreateFavoriteRequest $request,string $userId)
+    public function favoriteUser(CreateFavoriteRequest $request, string $userId)
     {
-        if($userId==Auth::id()){
-        return response()->json(['message' => 'You cannot favorite yourself.'], Response::HTTP_BAD_REQUEST);
+        if ($userId == Auth::id()) {
+            return response()->json(['message' => 'You cannot favorite yourself.'], Response::HTTP_BAD_REQUEST);
         }
 
         $request->user()->favorites()->create([
