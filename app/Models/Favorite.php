@@ -10,15 +10,15 @@ class Favorite extends Model
 {
     use HasFactory;
 
-    protected $fillable = ['post_id', 'user_id'];
+    protected $fillable = ['favorite_id','favorite_type', 'user_id'];
 
     public function user(): BelongsTo
     {
         return $this->belongsTo(User::class);
     }
 
-    public function posts(): BelongsTo
+   public function favorite()
     {
-        return $this->belongsTo(Post::class, 'post_id');
+        return $this->morphTo();
     }
 }
