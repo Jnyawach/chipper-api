@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Events\NewPostCreatedEvent;
 use App\Http\Resources\PostResource;
 use App\Models\Post;
 use App\Http\Requests\CreatePostRequest;
@@ -31,6 +32,8 @@ class PostController extends Controller
             'body' => $request->input('body'),
             'user_id' => $user->id,
         ]);
+
+        NewPostCreatedEvent::dispatch($post,$user);
 
         return new PostResource($post);
     }
