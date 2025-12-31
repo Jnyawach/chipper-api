@@ -8,6 +8,7 @@ use App\Models\Post;
 use App\Http\Requests\CreatePostRequest;
 use App\Http\Requests\UpdatePostRequest;
 use App\Http\Requests\DestroyPostRequest;
+use Illuminate\Support\Facades\Storage;
 
 /**
  * @group Posts
@@ -32,6 +33,14 @@ class PostController extends Controller
             'body' => $request->input('body'),
             'user_id' => $user->id,
         ]);
+        if($request->hasFile('image')){
+            $postImage= $request->file('image');
+            $imageName=time().'_'.$postImage->getClientOriginalName();
+            $postImage->storeAs('posts', $imageName, 'public');
+            $post->image = $imageName;
+            $post->save();
+
+        }
 
         NewPostCreatedEvent::dispatch($post,$user);
 
@@ -49,6 +58,20 @@ class PostController extends Controller
             'title' => $request->input('title'),
             'body' => $request->input('body'),
         ]);
+
+        if($request->hasFile('image')){
+            $postImage= $request->file('image');
+
+            //delete old image if exists
+            if($post->image && Storage::disk('public')->exists('posts/'.$post->image)){
+                Storage::disk('public')->delete('posts/'.$post->image);
+            }
+            $imageName=time().'_'.$postImage->getClientOriginalName();
+            $postImage->storeAs('posts', $imageName, 'public');
+            $post->image = $imageName;
+            $post->save();
+
+        }
 
         return new PostResource($post);
     }
